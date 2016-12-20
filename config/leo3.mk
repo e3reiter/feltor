@@ -6,12 +6,13 @@ INCLUDE += -I$(UIBK_OPENMPI_INC)
 INCLUDE += -I$(UIBK_NETCDF_4_INC)
 GLFLAGS  = -lm
 CC=g++
-MPICC=mpicxx
+MPICC=mpic++
 OPT=-O3
 NVCCARCH=-arch=sm_20 #Tesla M2090
 OMPFLAG=-fopenmp
 LIBS 	 = -L$(UIBK_HDF5_LIB) -lhdf5 -lhdf5_hl 
 LIBS 	+= -L$(UIBK_NETCDF_4_LIB) -lnetcdf -lcurl -lm
+JSONLIB = -ljsoncpp
 endif
 ##########################modules to load#############################
 #module load netcdf-4/4.3.2
