@@ -22,7 +22,15 @@
 int main( int argc, char* argv[])
 {   ////////////////////////////////setup MPI///////////////////////////////
     int provided;
+#if OMPI_MAJOR_VERSION == 1 && OMPI_MINOR_VERSION < 6 //target LEO3 specifically
     MPI_Init_thread( &argc, &argv, MPI_THREAD_SINGLE, &provided);
+#else
+    MPI_Init_thread( &argc, &argv, MPI_THREAD_FUNNELED, &provided);
+#endif
+    if( (provided != MPI_THREAD_FUNNELED) && (provided != MPI_THREAD_SINGLE))
+    {   std::cerr << "wrong mpi-thread environment provided!\n";
+            return -1;
+    }
     int periods[2] = {false, true}; //non-, periodic
     int rank, size;
     MPI_Comm_rank( MPI_COMM_WORLD, &rank);
@@ -293,4 +301,3 @@ int main( int argc, char* argv[])
 
     return 0;
 }
-
