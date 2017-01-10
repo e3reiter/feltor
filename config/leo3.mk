@@ -1,4 +1,3 @@
-
 ifeq ($(strip $(shell domainname)),leo3-domain)
 INCLUDE  = -I$(HOME)/include
 INCLUDE += -I$(UIBK_HDF5_INC)
@@ -10,9 +9,9 @@ MPICC=mpic++
 OPT=-O3
 NVCCARCH=-arch=sm_20 #Tesla M2090
 OMPFLAG=-fopenmp
-LIBS 	 = -L$(UIBK_HDF5_LIB) -lhdf5 -lhdf5_hl 
-LIBS 	+= -L$(UIBK_NETCDF_4_LIB) -lnetcdf -lcurl -lm
-JSONLIB = -ljsoncpp
+LIBS	 = -L$(UIBK_HDF5_LIB) -lhdf5 -lhdf5_hl
+LIBS	+= -L$(UIBK_NETCDF_4_LIB) -lnetcdf -lcurl -lm
+JSONLIB = -L$(HOME)/include/json/../../src/lib_json -ljsoncpp
 endif
 ##########################modules to load#############################
 #module load netcdf-4/4.3.2
@@ -28,7 +27,7 @@ endif
 #
 ##$ -l gpu=2
 #
-##reserve nodes 
+##reserve nodes
 ##$ -pe openmpi-2perhost 2
 ##$ -l h_vmem=5G
 #
