@@ -1,19 +1,19 @@
-ifeq ($(strip $(shell domainname)),leo3-domain)
+ifeq ($(strip $(shell dnsdomainname)),intern.leo3e.uibk.ac.at) 
+$(info on LEO3e)
 INCLUDE  = -I$(HOME)/include
 INCLUDE += -I$(UIBK_HDF5_INC)
 INCLUDE += -I$(UIBK_OPENMPI_INC)
 INCLUDE += -I$(UIBK_NETCDF_4_INC)
 GLFLAGS  = -lm
-CC=g++
-MPICC=mpic++
+CC=icc
+MPICC=mpicc
 OPT=-O3
-NVCCARCH=-arch=sm_20 #Tesla M2090
 OMPFLAG=-fopenmp
-LIBS	 = -L$(UIBK_HDF5_LIB) -lhdf5 -lhdf5_hl
+LIBS 	 = -L$(UIBK_HDF5_LIB) -lhdf5 -lhdf5_hl
 LIBS	+= -L$(UIBK_NETCDF_4_LIB) -lnetcdf -lcurl -lm
 JSONLIB = -L$(HOME)/include/json/../../src/lib_json -ljsoncpp
 endif
-##########################modules to load#############################
+###########################modules to load#############################
 #module load netcdf-4/4.3.2
 #module load cuda/5.0
 #######################Submit script for mpi+gpu job###########################
@@ -27,7 +27,7 @@ endif
 #
 ##$ -l gpu=2
 #
-##reserve nodes
+##reserve nodes 
 ##$ -pe openmpi-2perhost 2
 ##$ -l h_vmem=5G
 #
