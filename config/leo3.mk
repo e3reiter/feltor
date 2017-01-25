@@ -12,7 +12,7 @@ NVCCARCH=-arch=sm_20 #Tesla M2090
 OMPFLAG=-fopenmp
 LIBS 	 = -L$(UIBK_HDF5_LIB) -lhdf5 -lhdf5_hl 
 LIBS 	+= -L$(UIBK_NETCDF_4_LIB) -lnetcdf -lcurl -lm
-JSONLIB = -ljsoncpp
+JSONLIB = -L$(HOME)/include/json/../../src/lib_json -ljsoncpp
 endif
 ##########################modules to load#############################
 #module load netcdf-4/4.3.2
