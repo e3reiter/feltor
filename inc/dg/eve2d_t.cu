@@ -7,8 +7,8 @@
 
 
 #include "elliptic.h"
-#include "eve.h"
-//#include "cg.h"
+//#include "eve.h"
+#include "cg.h"
 #include "backend/timer.cuh"
 
 //NOTE: IF DEVICE=CPU THEN THE POLARISATION ASSEMBLY IS NOT PARALLEL AS IT IS NOW

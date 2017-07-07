@@ -1,8 +1,8 @@
 device=gpu
 
-#configure machine 
+#configure machine
 include ../../config/default.mk
-include ../../config/*.mk 
+include ../../config/*.mk
 include ../../config/devices/devices.mk
 
 INCLUDE+= -I../../ # other project libraries
@@ -14,25 +14,29 @@ CUFILES=$(wildcard *.cu)
 all: $(CPPFILES:%.cpp=%) $(CUFILES:%.cu=%)
 
 
-%_mpit: %_mpit.cu 
+%_mpit: %_mpit.cu
 	$(MPICC) $(INCLUDE) -DDG_DEBUG $(MPICFLAGS) $< -o $@ -g
 
 %_mpib: %_mpib.cu
-	$(MPICC) $(OPT) $(MPICFLAGS) $< -o $@ $(INCLUDE) 
+	$(MPICC) $(OPT) $(MPICFLAGS) $< -o $@ $(INCLUDE)
 
 %_t: %_t.cu
-	$(CC) $(OPT) $(INCLUDE) -DDG_DEBUG $(CFLAGS) $< -o $@ 
+	$(CC) $(OPT) $(INCLUDE) -DDG_DEBUG $(CFLAGS) $< -o $@
 
-%_b: %_b.cu 
-	$(CC) $(OPT) $(CFLAGS) $< -o $@ $(INCLUDE)  
+%_b: %_b.cu
+	$(CC) $(OPT) $(CFLAGS) $< -o $@ $(INCLUDE)
 
-bathRZ_t: bathRZ_t.cu 
-	$(CC) $(OPT) $(CFLAGS) $< -o $@ $(GLFLAGS) $(INCLUDE) 
-	
+bathRZ_t: bathRZ_t.cu
+	$(CC) $(OPT) $(CFLAGS) $< -o $@ $(GLFLAGS) $(INCLUDE)
+
+mg: mg.cu
+	$(CC) $(OPT) $(CFLAGS) $< -o $@ $(GLFLAGS) $(INCLUDE)
+
+
 .PHONY: clean doc
 
-doc: 
+doc:
 	doxygen Doxyfile
 
 clean:
-	rm -f *_t *_b *_mpit *_mpib 
+	rm -f *_t *_b *_mpit *_mpib

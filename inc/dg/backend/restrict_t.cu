@@ -1,5 +1,4 @@
 #include <iostream>
-
 #include <cusp/print.h>
 #include "xspacelib.cuh"
 #include "interpolation.cuh"
@@ -10,15 +9,14 @@ double function( double x, double y){return sin(x)*sin(y);}
 double function( double x, double y, double z){return sin(x)*sin(y)*sin(z);}
 
 const unsigned n = 3;
-const unsigned Nx = 3;
-const unsigned Ny = 5;
+const unsigned Nx = 4;
+const unsigned Ny = 8;
 const unsigned Nz = 2;
 
 typedef cusp::coo_matrix<int, double, cusp::host_memory> Matrix;
 
 int main()
 {
-
     {
     dg::Grid2d g( -10, 10, -5, 5, n, Nx, Ny);
     Matrix A = dg::create::backscatter( g);
