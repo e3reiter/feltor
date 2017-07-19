@@ -22,6 +22,7 @@ class RandPSDmatrix
 {   int n_;
     Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic> psd;
     Eigen::VectorXd ev_;
+  double ev_max_;
     Vector eigenvalues_;
 public:
     /**
@@ -41,11 +42,16 @@ public:
             //            std::cout << psd << std::endl;
         }
         ev_ = psd.eigenvalues().real();
+        ev_max_ = ev_.maxCoeff();
         transfer(ev_, eigenvalues_);
     }
     const Vector& get_eigenvalues() const
     {   return eigenvalues_;
     }
+    const double& get_maxev() const
+    {   return ev_max_;
+    }
+
     /**
      *@brief Solve linear System PSDx=b.
      *
