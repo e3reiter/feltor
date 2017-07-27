@@ -1,125 +1,92 @@
-#include <iostream>
-#include <iomanip>
+/* check EVEs capability to estimate the maximum Eigenvalue of Matrices */
 
-//#include "backend/xspacelib.cuh"
-#include <thrust/device_vector.h>
+#include <iostream>
+#include "manualmatrix.h"
+#include "eigenmatrix.h"
+#include "eve.h"
+#include "elliptic.h"
 #include "blas.h"
 
-
-#include "elliptic.h"
-//#include "eve.h"
-#include "cg.h"
-#include "backend/timer.cuh"
-
-//NOTE: IF DEVICE=CPU THEN THE POLARISATION ASSEMBLY IS NOT PARALLEL AS IT IS NOW
-
-//global relative error in L2 norm is O(h^P)
-//as a rule of thumb with n=4 the true error is err = 1e-3 * eps as long as eps > 1e3*err
-
+// Imitate "difficult" physical problem
 const double lx = M_PI;
 const double ly = 2.*M_PI;
 dg::bc bcx = dg::DIR;
 dg::bc bcy = dg::PER;
-//const double eps = 1e-3; //# of pcg iterations increases very much if
- // eps << relativer Abstand der exakten Lösung zur Diskretisierung vom Sinus
-
-double initial( double x, double y) {return 0.;}
+double initial( double x, double y)
+{   return 0.;
+}
 double amp = 0.9999;
-double pol( double x, double y) {return 1. + amp*sin(x)*sin(y); } //must be strictly positive
-//double pol( double x, double y) {return 1.; }
-//double pol( double x, double y) {return 1. + sin(x)*sin(y) + x; } //must be strictly positive
-
-double rhs( double x, double y) { return 2.*sin(x)*sin(y)*(amp*sin(x)*sin(y)+1)-amp*sin(x)*sin(x)*cos(y)*cos(y)-amp*cos(x)*cos(x)*sin(y)*sin(y);}
-//double rhs( double x, double y) { return 2.*sin( x)*sin(y);}
-//double rhs( double x, double y) { return 2.*sin(x)*sin(y)*(sin(x)*sin(y)+1)-sin(x)*sin(x)*cos(y)*cos(y)-cos(x)*cos(x)*sin(y)*sin(y)+(x*sin(x)-cos(x))*sin(y) + x*sin(x)*sin(y);}
-double sol(double x, double y)  { return sin( x)*sin(y);}
-double der(double x, double y)  { return cos( x)*sin(y);}
+double pol( double x, double y)
+{   return 1. + amp*sin(x)*sin(y);
+}
+double rhs( double x, double y)
+{   return 2.*sin(x)*sin(y)*(amp*sin(x)*sin(y)+1)-amp*sin(x)*sin(x)*cos(y)*cos(y)-amp*cos(x)*cos(x)*sin(y)*sin(y);
+}
 
 
 int main()
-{
-    dg::Timer t;
-    unsigned n, Nx, Ny;
-    double eps;
+{   // random SPD matrix:
+    //   generate Matrix
+    int n, div;
+    double seed;
+    std::cout << "Type n, seed and divisor:" <<std::endl;
+    std::cin >> n >> seed >> div;
+    dg::RandPSDmatrix<dg::DVec> A(n, seed);
+    //   solve with decomposition
+    dg::EVarbitraryMatrix<dg::DVec> A_decomp(n, div);
+    double ev_decomp;
+    A_decomp( A, ev_decomp);
+    std::cout<< "- - - - - - - - - - - - - -" <<std::endl;
+    std::cout<< "max. EV via decomposition: " << ev_decomp <<std::endl;
+    //   solve with EVE
+    //   ... needs dummy x and b as EVE works on solving Ax = b
+    dg::DVec x(n, 0.0), b(n, 1.0);
+    dg::EVE<dg::DVec> A_eve( x, n);
+    double ev_eve;
+    unsigned niter = A_eve( A, x, b, ev_eve);
+    std::cout<< "- - - - - - - - - - - - - -" <<std::endl;
+    std::cout<< "max. EV via EVEs guess: " << ev_eve << " after "<< niter << " iterations"<<std::endl;
+    std::cout<< "+ + + + + + + + + + + + + + +" <<std::endl;
+    std::cout<< "decomp-EVE: " << ev_decomp - ev_eve <<std::endl;
+    std::cout<< "+ + + + + + + + + + + + + + +" <<std::endl;
+
+    // for an elliptic object
+    std::cout<< "- - - - - - - - - - - - - -" <<std::endl;
+    unsigned Nx, Ny, p;
     double jfactor;
-    std::cout << "Type n, Nx and Ny and epsilon and jfactor (1)! \n";
-    std::cin >> n >> Nx >> Ny; //more N means less iterations for same error
-    std::cin >> eps >> jfactor;
-    std::cout << "Computation on: "<< n <<" x "<<Nx<<" x "<<Ny<<std::endl;
-    //std::cout << "# of 2d cells                 "<< Nx*Ny <<std::endl;
-    dg::Grid2d grid( 0, lx, 0, ly, n, Nx, Ny, bcx, bcy);
+    std::cout << "Type p, Nx and Ny and jfactor (1) as well as divisor! \n";
+    std::cin >> p >> Nx >> Ny; //more N means less iterations for same error
+    std::cin >> jfactor >> div;
+    dg::Grid2d grid( 0, lx, 0, ly, p, Nx, Ny, bcx, bcy);
     dg::DVec w2d = dg::create::weights( grid);
     dg::DVec v2d = dg::create::inv_weights( grid);
     dg::DVec one = dg::evaluate( dg::one, grid);
-    //create functions A(chi) x = b
-    dg::DVec x =    dg::evaluate( initial, grid);
-    dg::DVec b =    dg::evaluate( rhs, grid);
+    b = dg::evaluate( rhs, grid);
     dg::DVec chi =  dg::evaluate( pol, grid);
     dg::DVec chi_inv(chi);
     dg::blas1::transform( chi, chi_inv, dg::INVERT<double>());
     dg::blas1::pointwiseDot( chi_inv, v2d, chi_inv);
-    dg::DVec temp = x;
-
-
-    std::cout << "Create Polarisation object and set chi!\n";
-    t.tic();
-    {
-    dg::Elliptic<dg::CartesianGrid2d, dg::DMatrix, dg::DVec> pol( grid, dg::not_normed, dg::centered, jfactor);
-    pol.set_chi( chi);
-    t.toc();
-    std::cout << "Creation of polarisation object took: "<<t.diff()<<"s\n";
-
-    dg::Invert<dg::DVec > invert( x, n*n*Nx*Ny, eps);
-
-
-    std::cout << eps<<" ";
-    t.tic();
-    std::cout << " "<< invert( pol, x, b, w2d, chi_inv, v2d);
-    t.toc();
-    //std::cout << "Took "<<t.diff()<<"s\n";
-    }
-
-    //compute error
-    const dg::DVec solution = dg::evaluate( sol, grid);
-    const dg::DVec derivati = dg::evaluate( der, grid);
-    dg::DVec error( solution);
-
-    dg::blas1::axpby( 1.,x,-1., solution, error);
-    double err = dg::blas2::dot( w2d, error);
-    //std::cout << "L2 Norm2 of Error is                       " << err << std::endl;
-    const double norm = dg::blas2::dot( w2d, solution);
-    std::cout << " "<<sqrt( err/norm);
-    {
-    dg::Elliptic<dg::CartesianGrid2d, dg::DMatrix, dg::DVec> pol_forward( grid, dg::not_normed, dg::forward, jfactor);
-    pol_forward.set_chi( chi);
-    x = temp;
-    dg::Invert<dg::DVec > invert_fw( x, n*n*Nx*Ny, eps);
-    std::cout << " "<< invert_fw( pol_forward, x, b, w2d, chi_inv, v2d);
-    dg::blas1::axpby( 1.,x,-1., solution, error);
-    err = dg::blas2::dot( w2d, error);
-    std::cout << " "<<sqrt( err/norm);
-    }
-
-    {
-    dg::Elliptic<dg::CartesianGrid2d, dg::DMatrix, dg::DVec> pol_backward( grid, dg::not_normed, dg::backward, jfactor);
-    pol_backward.set_chi( chi);
-    x = temp;
-    dg::Invert<dg::DVec > invert_bw( x, n*n*Nx*Ny, eps);
-    std::cout << " "<< invert_bw( pol_backward, x, b, w2d, chi_inv, v2d);
-    dg::blas1::axpby( 1.,x,-1., solution, error);
-    err = dg::blas2::dot( w2d, error);
-    std::cout << " "<<sqrt( err/norm)<<std::endl;
-    }
-
-
-    dg::DMatrix DX = dg::create::dx( grid);
-    dg::blas2::gemv( DX, x, error);
-    dg::blas1::axpby( 1.,derivati,-1., error);
-    err = dg::blas2::dot( w2d, error);
-    //std::cout << "L2 Norm2 of Error in derivative is         " << err << std::endl;
-    const double norm_der = dg::blas2::dot( w2d, derivati);
-    std::cout << "L2 Norm of relative error in derivative is "<<sqrt( err/norm_der)<<std::endl;
-    //derivative converges with p-1, for p = 1 with 1/2
-
+    dg::Elliptic<dg::CartesianGrid2d, dg::DMatrix, dg::DVec> ell( grid, dg::not_normed, dg::centered, jfactor);
+    ell.set_chi( chi);
+    std::cout << "Created Polarisation object and set chi!\n";
+    //   solve with decomposition
+    dg::EVarbitraryMatrix<dg::DVec> ell_decomp(p*p*Nx*Ny, div);
+    ell_decomp( ell, ev_decomp);
+    std::cout<< "- - - - - - - - - - - - - -" <<std::endl;
+    std::cout<< "max. EV via decomposition: " << ev_decomp <<std::endl;
+    //   solve with EVE
+    x = dg::evaluate( initial, grid);
+    dg::EVE<dg::DVec> ell_eve( x, p*p*Nx*Ny);
+    double ev_max;
+    niter = ell_eve( ell, x, b, ev_max);
+    std::cout<< "- - - - - - - - - - - - - -" <<std::endl;
+    std::cout<< "max. EV via EVEs guess: " << ev_max << " after "<< niter << " iterations"<<std::endl;
+    //    does it work with eInvert (tested as mere wrapper for EVE)
+    b = dg::evaluate( rhs, grid);
+    x = dg::evaluate( initial, grid);
+    dg::eInvert<dg::DVec> invert( x, p*p*Nx*Ny, 1e-6, 1, false);
+    niter = invert( ell, x, b, w2d, chi_inv, v2d, ev_eve);
+    std::cout<< "- - - - - - - - - - - - - -" <<std::endl;
+    std::cout<< "max. EV via eInvert guess: " << ev_eve << " after "<< niter << " iterations"<<std::endl;
     return 0;
 }

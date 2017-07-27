@@ -22,28 +22,33 @@ class RandPSDmatrix
 {   int n_;
     Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic> psd;
     Eigen::VectorXd ev_;
-  double ev_max_;
+    double ev_max_;
     Vector eigenvalues_;
 public:
+  int n, num_rows, num_cols;
     /**
      *@brief Construct for n rows & n columns and calculates eigenvalues
      *
      *@param n #rows & #columns
      */
-    RandPSDmatrix(const int n, const double seed):n_(n), eigenvalues_(n)
+    RandPSDmatrix() {}
+    RandPSDmatrix(const int m, const double seed):n_(m), eigenvalues_(m)
     {   std::srand(seed);
         {   Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic> randposmat(n_, n_);
             for( int i=0; i<n_; ++i)
             {   for( int j=0; j<n_; ++j)
-                {   randposmat(i,j) = std::rand()%2;
+                {   randposmat(i,j) = std::rand()%2/10.0;
                 }
             }
             psd = randposmat*randposmat.transpose();
-            //            std::cout << psd << std::endl;
+            //std::cout << psd << std::endl;
         }
         ev_ = psd.eigenvalues().real();
         ev_max_ = ev_.maxCoeff();
         transfer(ev_, eigenvalues_);
+        n=1;
+        num_cols=n_;
+        num_rows=n_;
     }
     const Vector& get_eigenvalues() const
     {   return eigenvalues_;
@@ -76,7 +81,7 @@ public:
      *@param x left hand side
      *@param y result
      */
-   void symv(const Vector& x, Vector& y)
+    void symv(const Vector& x, Vector& y)
     {   std::fill(y.begin(), y.end(), 0.0);
         for( int i=0; i<n_; ++i)
         {   for( int j=0; j<n_; ++j)
@@ -99,21 +104,21 @@ public:
      *
      *@param n #rows & #columns
      */
-  Laplace1D(const int n, const double h):n_(n), h_(h), eigenvalues_(n)
-  {   l1d.resize(n_, n_);
-      l1d.setZero();
-      l1d(0,0) = 2./h;
-      l1d(0,1) = -1./h;
-      for( int i = 1; i<n-1; ++i)
-        { l1d(i,i-1) = -1./h;
-          l1d(i,i)   =  2./h;
-          l1d(i,i+1) = -1./h;
+    Laplace1D(const int n, const double h):n_(n), h_(h), eigenvalues_(n)
+    {   l1d.resize(n_, n_);
+        l1d.setZero();
+        l1d(0,0) = 2./h;
+        l1d(0,1) = -1./h;
+        for( int i = 1; i<n-1; ++i)
+        {   l1d(i,i-1) = -1./h;
+            l1d(i,i)   =  2./h;
+            l1d(i,i+1) = -1./h;
         }
-      l1d(n-1,n-2) = -1./h;
-      l1d(n-1,n-1) = 2./h;
-      //      std::cout << l1d << std::endl;
-      ev_ = l1d.eigenvalues().real();
-      transfer(ev_, eigenvalues_);
+        l1d(n-1,n-2) = -1./h;
+        l1d(n-1,n-1) = 2./h;
+        //      std::cout << l1d << std::endl;
+        ev_ = l1d.eigenvalues().real();
+        transfer(ev_, eigenvalues_);
     }
     const Vector& get_eigenvalues() const
     {   return eigenvalues_;
@@ -157,10 +162,10 @@ struct MatrixTraits< RandPSDmatrix<V> >
 {   typedef typename VectorTraits<V>::value_type value_type;
     typedef SelfMadeMatrixTag matrix_category;
 };
-  template< class V>
-  struct MatrixTraits< Laplace1D<V> >
-  {   typedef typename VectorTraits<V>::value_type value_type;
+template< class V>
+struct MatrixTraits< Laplace1D<V> >
+{   typedef typename VectorTraits<V>::value_type value_type;
     typedef SelfMadeMatrixTag matrix_category;
-  };
+};
 ///@endcond
 } //namespace test

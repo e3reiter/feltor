@@ -21,7 +21,7 @@ class wrapper
 {
 public:
     wrapper() {}
-    wrapper( int m, Matrix& A): m_(m), A_(A) {}
+    wrapper(const int m, Matrix &A): m_(m), A_(A) {}
     int rows()
     {   return m_;
     }
@@ -47,14 +47,14 @@ private:
 template< class Vector>
 class EVarbitraryMatrix
 {
-public:
-  typedef typename VectorTraits<Vector>::value_type value_type;
-  EVarbitraryMatrix() {}
-  EVarbitraryMatrix( int m, int p):m_(m), p_(p) {}
-  template< class Matrix>
-  void operator()( Matrix &A, value_type &ev_max);
 private:
   int m_, p_;
+  typedef typename VectorTraits<Vector>::value_type value_type;
+public:
+  EVarbitraryMatrix() {}
+  EVarbitraryMatrix(const int m, const int p):m_(m), p_(p) {}
+  template< class Matrix>
+  void operator()( Matrix &A, value_type &ev_max);
 };
 
 template< class Vector>

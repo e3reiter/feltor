@@ -1,23 +1,25 @@
+/* EVE adds an estimator for the largest Eigenvalue
+   to not-yet-preconditioned CG.
+
+   eInvert is hardly more but a wrapper and needs testing
+   of the extrapolation feature.                          */
+
 #ifndef _DG_EVE_
 #define _DG_EVE_
 
 #include <cmath>
-
 #include "blas.h"
 #include "functors.h"
-
-#ifdef DG_BENCHMARK
-#include "backend/timer.cuh"
-#endif //DG_BENCHMARK
 
 namespace dg
 {
 
+/* EVE (EigenValueEstimator) estimate largest EV using CG */
 template< class Vector>
 class EVE
 {
 public:
-    typedef typename VectorTraits<Vector>::value_type value_type;//!< value type of the Vector class
+    typedef typename VectorTraits<Vector>::value_type value_type;
     EVE() {}
     EVE( const Vector& copyable, unsigned max_iter):r( copyable), p( r), ap( r), max_iter( max_iter) {}
     void set_max( unsigned new_max)
@@ -62,6 +64,7 @@ unsigned EVE< Vector>::operator()( Matrix& A, Vector& x, const Vector& b, value_
     value_type alpha = 1., alpha_inv = 1., delta = 0.;
     value_type evdash, gamma = 0., lambda, omega, beta = 0.;
     value_type ev_est = 0.;
+    ev_max = 0.;
     for( unsigned i=1; i<max_iter; i++)
     {   lambda = delta*alpha_inv;       // EVE!
         blas2::symv( A, p, ap);
@@ -86,9 +89,9 @@ unsigned EVE< Vector>::operator()( Matrix& A, Vector& x, const Vector& b, value_
         omega = sqrt( evdash*evdash +4.*beta*gamma);   // EVE!
         gamma = 0.5 *(1. -evdash /omega);              // EVE!
         ev_max += omega*gamma;                         // EVE!
-        //        if( abs(ev_est-ev_max) < eps_ev) // ?
-        //        {   return i;                    // ?
-        //        }                                // ?
+        if( std::abs(ev_est-ev_max) < eps_ev) // ?
+        {   return i;                    // ?
+        }                                // ?
         beta = delta*alpha_inv*alpha_inv;              // EVE!
         if( sqrt( nrm2r_new) < eps*(nrmb + nrmb_correction)) // ?
         {   return i;                                        // ?
@@ -161,7 +164,6 @@ struct eInvert
         assert( &rho != &phi);
         blas1::axpby( alpha[0], phi0, alpha[1], phi1, phi); // 1. phi0 + 0.*phi1 = phi
         blas1::axpby( alpha[2], phi2, 1., phi); // 0. phi2 + 1. phi0 + 0.*phi1 = phi
-
         unsigned number;
 #ifdef DG_BENCHMARK
 #ifdef MPI_VERSION

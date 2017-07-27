@@ -1,11 +1,11 @@
-/* test eigenmatrix.h for manualmatrix/FELTOR matrices */
-
 #include <iostream>
 #include "manualmatrix.h"
-#include "eigenmatrix.h"
+#include "analysematrix.h"
 #include "elliptic.h"
+#include "backend/timer.cuh"
 
-// "difficult physics" for elliptic
+/* test analysematrix.h for available classes */
+
 const double lx = M_PI;
 const double ly = 2.*M_PI;
 dg::bc bcx = dg::DIR;
@@ -22,22 +22,20 @@ double rhs( double x, double y)
 }
 
 int main()
-{   // for some random symmetric positive matrix
+{   dg::Timer t;
+    // for some random symmetric positive matrix
     int n_rand, div;
-    std::cout<< "n for random psd and divisor, please:" <<std::endl;
-    std::cin>> n_rand >> div;
-    std::cout<< "- - - - - - - - - - - - - -" <<std::endl;
-    std::cout<< "constructing random psd ..." <<std::endl;
-    dg::RandPSDmatrix<dg::DVec> spd(n_rand, 1.1);
-    dg::EVarbitraryMatrix<dg::DVec> am(n_rand, div);
+//    std::cout<< "n for random psd and divisor, please:" <<std::endl;
+//    std::cin>> n_rand >> div;
+//    std::cout<< "- - - - - - - - - - - - - -" <<std::endl;
+//    std::cout<< "constructing random psd ..." <<std::endl;
+//    dg::RandPSDmatrix<dg::DVec> spd(n_rand, 1.1);
+//    dg::AnalysisMatrix<dg::DVec> am(n_rand, n_rand);
     double ev_max;
-    am( spd, ev_max);
-
-    std::cout << "EV_max: "<< ev_max <<std::endl;
+//    am( spd, div, ev_max);
     // now for the elliptic object
     unsigned p, Nx, Ny;
     double eps, jfactor;
-    std::cout<< "- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -" <<std::endl;
     std::cout << "Type p, Nx and Ny and epsilon and jfactor (1), new divisor, too! \n";
     std::cin >> p >> Nx >> Ny;
     std::cin >> eps >> jfactor >> div;
@@ -47,8 +45,7 @@ int main()
     std::cout << "Create Polarisation object and set chi!\n";
     dg::Elliptic<dg::CartesianGrid2d, dg::DMatrix, dg::DVec> ell( grid, dg::not_normed, dg::centered, jfactor);
     ell.set_chi( chi);
-    dg::EVarbitraryMatrix<dg::DVec> ae( p*p*Nx*Ny, div);
-    ae( ell, ev_max);
-    std::cout << "EV_max: "<< ev_max <<std::endl;
+    dg::AnalysisMatrix<dg::DVec> ae(p*p*Nx*Ny, p*p*Nx*Ny);
+    ae( ell, div, ev_max);
     return 0;
 }
