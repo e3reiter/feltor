@@ -78,7 +78,7 @@ int main()
     t.toc();
     //std::cout << "Took "<<t.diff()<<"s\n";
     }
-
+o
     //compute error
     const dg::DVec solution = dg::evaluate( sol, grid);
     const dg::DVec derivati = dg::evaluate( der, grid);

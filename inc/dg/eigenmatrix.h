@@ -14,6 +14,7 @@
 namespace dg
 {
 
+
 // User-supplied matrix operation class for SpectrA matrix-
 // free usage as in https://spectralib.org/quick-start.html
 template<class Vector, class Matrix>
@@ -32,10 +33,12 @@ public:
     {   x_.resize(m_);
         y_.resize(m_);
         for( int i=0; i<m_; ++i)
-            x_[i] = x_in[i];
+        {   x_[i] = x_in[i];
+        }
         A_.symv(x_, y_);
         for( int i=0; i<m_; ++i)
-            y_out[i] = y_[i];
+        {   y_out[i] = y_[i];
+        }
     }
 private:
     int m_;
@@ -43,29 +46,63 @@ private:
     Vector x_, y_;
 };
 
+
 // Calculates maximum Eigenvalue of arbitrary FELTOR Matrix
-template< class Vector>
 class EVarbitraryMatrix
 {
 private:
-  int m_, p_;
-  typedef typename VectorTraits<Vector>::value_type value_type;
+    int n_;
+    template< class Vector, class Matrix>
+    void ev_topdown( Matrix &A, Vector &ev, int nev, int ncv);
+    template< class Vector, class Matrix>
+    void ev_downtop( Matrix &A, Vector &ev, int nev, int ncv);
 public:
-  EVarbitraryMatrix() {}
-  EVarbitraryMatrix(const int m, const int p):m_(m), p_(p) {}
-  template< class Matrix>
-  void operator()( Matrix &A, value_type &ev_max);
+    EVarbitraryMatrix() {}
+    EVarbitraryMatrix(const int n):n_(n) {}
+    template< class Vector, class Matrix>
+    void operator()( Matrix &A, Vector &ev_top, Vector &ev_bot);
 };
 
-template< class Vector>
-template< class Matrix>
-void EVarbitraryMatrix<Vector>::operator()( Matrix& A, value_type &ev_max)
-{   dg::wrapper<Vector, Matrix> ae(m_, A);
-    Spectra::SymEigsSolver<double, Spectra::LARGEST_ALGE, dg::wrapper<Vector, Matrix> > eigs(&ae, 1, p_);
+template< class Vector, class Matrix>
+void EVarbitraryMatrix::ev_topdown( Matrix &A, Vector &ev, int nev, int ncv)
+{   dg::wrapper<Vector, Matrix> ae(n_, A);
+    Spectra::SymEigsSolver<double, Spectra::LARGEST_ALGE, dg::wrapper<Vector, Matrix> > eigs(&ae, nev, ncv);
     eigs.init();
     eigs.compute();
     Eigen::VectorXd evalues = eigs.eigenvalues();
-    ev_max = evalues[0];
+    for( int i=0; i<nev; ++i)
+    {   ev[i] = evalues[i];
+    }
 }
+template< class Vector, class Matrix>
+void EVarbitraryMatrix::ev_downtop( Matrix &A, Vector &ev, int nev, int ncv)
+{   dg::wrapper<Vector, Matrix> ae(n_, A);
+    Spectra::SymEigsSolver<double, Spectra::SMALLEST_ALGE, dg::wrapper<Vector, Matrix> > eigs(&ae, nev, ncv);
+    eigs.init();
+    eigs.compute();
+    Eigen::VectorXd evalues = eigs.eigenvalues();
+    for( int i=0; i<nev; ++i)
+    {   ev[i] = evalues[i];
+    }
+}
+
+template< class Vector, class Matrix>
+void EVarbitraryMatrix::operator()( Matrix& A, Vector &ev_top, Vector &ev_bot)
+{   int nev_top = ev_top.size(), nev_bot = ev_bot.size();
+    int ncv_top = nev_top+10, ncv_bot = nev_bot+100;
+    if( ncv_top > n_)
+    {   ncv_top = n_;
+    }
+    if( ncv_bot > n_)
+    {   ncv_bot = n_;
+    }
+    if( nev_top > 0)
+    {   EVarbitraryMatrix::ev_topdown( A, ev_top, nev_top, ncv_top);
+    }
+    if( nev_bot > 0)
+    {   EVarbitraryMatrix::ev_downtop( A, ev_bot, nev_bot, ncv_bot);
+    }
+}
+
 
 } //namespace dg

@@ -1,0 +1,31 @@
+#+STARTUP: indent
+
+#+LATEX_CLASS: org2minLaTeX
+#+LATEX_HEADER: \usepackage[backend=biber]{biblatex}
+#+LATEX_HEADER: \addbibresource{/home/e3r/literature/phd_akendl/lit_phd_akendl.bib}
+
+* Meta                                                             :noexport:
+
+* DONE adopt MPI for LEO3(e)
+CLOSED: [2017-01-26 Thu 13:24]
+#+BEGIN_SRC C++
+  #if OMPI_MAJOR_VERSION == 1 && OMPI_MINOR_VERSION < 6 //target LEO3 specifically
+      MPI_Init_thread( &argc, &argv, MPI_THREAD_SINGLE, &provided);
+  #else
+      MPI_Init_thread( &argc, &argv, MPI_THREAD_FUNNELED, &provided);
+  #endif
+      if( (provided != MPI_THREAD_FUNNELED) && (provided != MPI_THREAD_SINGLE))
+      {   std::cerr << "wrong mpi-thread environment provided!\n";
+              return -1;
+      }#+END_SRC
+* DONE live view on e3rgpu
+CLOSED: [2017-01-10 Tue 11:24]
+* TODO Multigrid CP/CG Preconditioner
+** TODO write output to file for testing
+** TODO eigenvalue estimate from matrix free CG
+The Lanczos and Conjugate Gradient Algorithms: From Theory to Finite Precision Computations
+
+- maximum Ritz values?
+** TODO 1D/2D/(3D?)
+* TODO Single/Double for DG
+* TODO Wiki

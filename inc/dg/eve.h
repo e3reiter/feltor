@@ -89,7 +89,7 @@ unsigned EVE< Vector>::operator()( Matrix& A, Vector& x, const Vector& b, value_
         omega = sqrt( evdash*evdash +4.*beta*gamma);   // EVE!
         gamma = 0.5 *(1. -evdash /omega);              // EVE!
         ev_max += omega*gamma;                         // EVE!
-        if( std::abs(ev_est-ev_max) < eps_ev) // ?
+        if( std::abs(ev_est-ev_max) < eps_ev) // does one need abs here or is it monotonous?
         {   return i;                    // ?
         }                                // ?
         beta = delta*alpha_inv*alpha_inv;              // EVE!

@@ -29,6 +29,9 @@ all: $(CPPFILES:%.cpp=%) $(CUFILES:%.cu=%)
 bathRZ_t: bathRZ_t.cu
 	$(CC) $(OPT) $(CFLAGS) $< -o $@ $(GLFLAGS) $(INCLUDE)
 
+lobpcg_t: lobpcg_t.cu
+	$(CC) $(OPT) $(CFLAGS) $< -o $@ $(GLFLAGS) -llapacke -llapack -fpermissive $(INCLUDE)
+
 mg: mg.cu
 	$(CC) $(OPT) $(CFLAGS) $< -o $@ $(GLFLAGS) $(INCLUDE)
 
